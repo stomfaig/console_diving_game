@@ -4,15 +4,16 @@ class JellyFish(Entity):
 
     states = [ 
         [
-            ["  __ "],
-            [" OOOO"],
-            ["OOOOOO"],
-            [" /  \\"],
-        ], [
-            ["  __ "],
-            [" OOOO"],
-            ["OOOOOO"],
-            [" \\  /"],
+            "  __  ",
+            " OOOO ",
+            "OOOOOO",
+            " /  \\ ",
+        ], 
+        [
+            "  __  ",
+            " OOOO ",
+            "OOOOOO",
+            " \\  / ",
         ]
     ]
 

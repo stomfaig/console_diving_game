@@ -1,5 +1,6 @@
-import time
+from __future__ import annotations
 
+import time
 from typing import Tuple, List
 
 
@@ -14,31 +15,82 @@ class Buffer:
     
     @staticmethod
     def with_content(data: List[List[str]]):
-        # need a check
-        buffer = Buffer((len(data), len(data[0])))
+        rows_lens = [len(row) for row in data]
+        assert min(rows_lens)==max(rows_lens), f"Inconsistent line lengths"
+        buffer = Buffer((len(data[0]), len(data)))
         buffer.data = data
         return buffer
 
+    @staticmethod
     def from_stiring_list(data: List[str]):
         buffer_data = []
         for line in data:
             buffer_data.append([ch for ch in line])
         return Buffer.with_content(buffer_data)
 
+    @staticmethod
+    def _empty_data_with_size(size: Size):
+        w, h = size
+        data = [[" " for w in range(w)] for h in range(h)]
+        return data
+
     def __init__(self, size: Size):
         self.size = size
-        width, height = self.size
-        self.data = [[" " for w in range(width)] for h in range(height)]
+        self.data = Buffer._empty_data_with_size(size)
 
     def __getitem__(self, idx: Location):
         x, y = idx
-        return self.data[x][y]
+        return self.data[y][x]
 
     def __setitem__(self, idx: Location, val: str):
         x, y = idx
-        self.data[x][y] = val
+        self.data[y][x] = val
 
-class Render:
+    def set_buffer(
+            self,
+            buffer: Buffer,
+    ):
+        assert self.size==buffer.size
+        self.data = buffer.data
+
+    def clear(self):
+        self.data = Buffer._empty_data_with_size(self.size)
+
+    def set_rectangle(
+            self,
+            buffer: Buffer,
+            upper_left: Location,
+    ):
+        w, h = buffer.size
+
+        for y in range(h):
+            for x in range(w):
+                self[x + upper_left[0], y + upper_left[1]] = buffer[x, y]
+
+    def _check_point_in_scene(
+            self,
+            point: Location,
+    ):
+        x, y = point
+
+        assert x >= 0, f"x coordinate must be greater than 0"
+        assert x < self.size[0], f"x coordinate ({x}) must be smaller than the width ({self.size[0]}) of the canvas"
+        assert y >= 0, f"y coordinate must be greater than 0"
+        assert y < self.size[1], f"y coordinate ({y}) must be smaller than the height ({self.size[1]}) of the canvas"
+
+    def print_text_at(
+            self,
+            text: str,
+            position: Location,
+    ):
+        self._check_point_in_scene(position)
+        self._check_point_in_scene((position[0] + len(text) - 1, position[1]))
+
+        x, y = position
+        for i, ch in enumerate(text):
+            self[x + i, y] = ch
+
+class Render(Buffer):
 
     @staticmethod
     def Print(string):
@@ -69,7 +121,8 @@ class Render:
 
         for y in range(upper_left[1], lower_right[1]):
             Render.Move_cursor_to((upper_left[0], y))
-            Render.Print("".join(buffer[y,upper_left[0]:lower_right[0]]))
+            for x in range(upper_left[0], lower_right[0]):
+                Render.Print(buffer[x, y])
 
     @staticmethod
     def Draw_buffer(buffer: Buffer):
@@ -83,9 +136,8 @@ class Render:
             self,
             size: Size,
     ):
+        super().__init__(size)
         Render.Clear_screen()
-        self.size = size
-        self.buffer = Buffer(self.size)
         self.flush_buffer()
 
     def flush_rectangle(
@@ -97,72 +149,10 @@ class Render:
         self._check_point_in_scene(lower_right)
 
         Render.Draw_rectangle_from_screen_buffer(
-            buffer=self.buffer,
+            buffer=self,
             upper_left = upper_left,
             lower_right=lower_right,
         )
 
     def flush_buffer(self):
-        Render.Draw_buffer(self.buffer)
-
-    def set_rectangle(
-            self,
-            buffer: Buffer,
-            upper_left: Location,
-    ):
-        w, h = buffer.size
-
-        for y in range(h):
-            for x in range(w):
-                self.buffer[x + upper_left[0], y + upper_left[1]] = buffer[x, y]
-
-    def set_buffer(
-            self,
-            buffer: Buffer
-    ):
-        self.buffer = buffer
-        self.flush_buffer()
-
-    def clear_buffer(self):
-        self.buffer = Buffer(self.buffer.size)
-
-    def _check_point_in_scene(
-            self,
-            point: Location,
-    ):
-        x, y = point
-
-        assert x >= 0, f"x coordinate must be greater than 0"
-        assert x < self.size[0], f"x coordinate must be smaller than the width of the canvas"
-        assert y >= 0, f"y coordinate must be greater than 0"
-        assert y < self.size[1], f"y coordinate must be smaller than the width of the canvas"
-
-    def __getitem__(self, idx: Location):
-        return self.buffer.__getitem__(idx)
-
-    def __setitem__(self, idx: Location, val: str):
-        return self.buffer.__setitem__(idx, val)
-
-class Drawer(Render):
-
-    def __init__(
-            self,
-            size: Size,
-    ):
-        super().__init__(
-            size
-        )
-
-    def print_text_at(
-            self,
-            text: str,
-            position: Tuple[int, int],
-    ):
-        self._check_point_in_scene(position)
-        self._check_point_in_scene((position[0] + len(text) - 1, position[1]))
-
-        x, y = position
-        for i, ch in enumerate(text):
-            self[y,x + i] = ch
-        
-        self.flush_buffer()
+        Render.Draw_buffer(self)

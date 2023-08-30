@@ -1,17 +1,16 @@
 from entities.entity import Entity
-from render import Render
-
 
 class DataScreen(Entity):
 
-    initial_position = (0, 0)
+    initial_position = (121, 18)
+    called = 1
 
     states = [
         [
             "    .____.____.    ",
-            "   /  \  H  /  \\  ",
-            "  /    \ | /    \\ ",
-            " / E --- . --- F \\",
+            "   /  \  H  /  \\   ",
+            "  /    \ | /    \\  ",
+            " / E --- . --- F \\ ",
             "+-----------------+",
             "| Gas left: .......",
             "| Depth:    .......",
@@ -20,12 +19,9 @@ class DataScreen(Entity):
             "| Time:     .......",
             "----+----+----+----",
             "[T1]| T2 | T3 | T4 ",
-
         ]
     ]
 
-    def draw(
-            self,
-            render: Render,
-    ):
-        pass
+    def update(self):
+        self.called *= 10
+        self.states[0].print_text_at(str(self.called), (12, 5))

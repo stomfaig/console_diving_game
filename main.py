@@ -17,8 +17,8 @@ def main():
 
     render = Render((144, 30))
 
-    for _ in range(10):
-        render.clear_buffer()
+    for _ in range(5):
+        render.clear()
         draw(render)
         render.flush_buffer()
 
